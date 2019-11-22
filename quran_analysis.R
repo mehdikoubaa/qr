@@ -12,7 +12,7 @@ qr <- quran_ar_min %>% select(surah_id,ayah_id,surah_title_en,ayah =text)
 qr_k <-  quran_ar_min %>% 
   select(surah_id,ayah_id,surah_title_en,ayah =text) %>%
   unnest_tokens(output=kalima,input=ayah,token="words")
-write_csv(qr_k,"quran_by_words")
+write_csv(qr_k,"quran_by_words.csv")
 
 #get occurence of words
 qr_occ <-  quran_ar_min %>% 
