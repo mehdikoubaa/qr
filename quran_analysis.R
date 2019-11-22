@@ -2,6 +2,7 @@ library(tidyverse)
 library(tidytext) #to use text mining
 library(quRan)
 
+
 data("quran_ar_min")
 
 #select column to study
@@ -10,25 +11,38 @@ qr <- quran_ar_min %>% select(surah_id,ayah_id,surah_title_en,ayah =text)
 #unnest every word in a row
 qr_k <-  quran_ar_min %>% 
   select(surah_id,ayah_id,surah_title_en,ayah =text) %>%
-  unnest_tokens(kalima,ayah)
+  unnest_tokens(output=kalima,input=ayah,token="words")
 
 #get occurence of words
 qr_occ <-  quran_ar_min %>% 
   select(surah_id,ayah_id,surah_title_en,ayah =text) %>%
-  unnest_tokens(kalima,ayah) %>% 
+  unnest_tokens(output=kalima,input=ayah,token="words") %>% 
   group_by(kalima) %>% 
   summarise(marrat=n()) %>% 
   arrange (desc(marrat))
 save(qr_occ,file="quran_occurences.rda")
 
 #remove words in "stop words"
+#____1/ with stopwords::
 library(stopwords)
 stp <- stopwords("arabic")
-qr_occ_rmstp <- qr_occ %>% 
-  filter (!kalima %in% stp) #stopwords is not effective,should have an other
+qr_occ_cln1 <- qr_occ %>% 
+  filter (!kalima %in% stp) 
+#stopwords is not effective,should have an other:
+#->  it’s not as long of a list as >>>>> arabicStemR::removeStopWords(), 
+#and it includes important Qur’anic words like يوم (day).
+
+#___2/ with arabicStemR
+library(arabicStemR)  # Has a list of Arabic stopwords
+arabic_stopwords <- tibble(word = removeStopWords("سلام")$arabicStopwordList)
+qr_occ_cln2 <- qr_occ %>% 
+  filter (!kalima %in% arabic_stopwords$word) 
 
 #see all words starting with "waw"
-waw <- qr_occ[str_detect(qr_occ$kalima,"^و.*"),]
+waw <- qr_occ_cln2[str_detect(qr_occ_cln2$kalima,"^و.*"),]
 
 #see identical occurence
 ident <- qr_occ %>% group_by(marrat) %>% filter(n()>1) %>% ungroup()
+
+
+
